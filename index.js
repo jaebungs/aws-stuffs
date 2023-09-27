@@ -1,6 +1,6 @@
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { dynamoDBclient } from './ddbClient'
-import { DeleteItemCommand, GetItemCommand, PutItemCommand, ScanCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb'
+import { DeleteItemCommand, GetItemCommand, PutItemCommand, ScanCommand, UpdateItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
 import {v4 as uuidv4 } from 'uuid'
 
 export const hanlder = async function(event) {
@@ -8,7 +8,10 @@ export const hanlder = async function(event) {
 
     switch(event.httpMethod) {
         case "GET":
-            if (event.pathParameters != null) {
+            if (event.queryStringsParameters != null) {
+                body = await getProductByCategory(event)
+            }
+            else if (event.pathParameters != null) {
                 body = await getProduct(event.pathParameters.id)
             } else {
                 body = await getAllProduct()
@@ -132,6 +135,33 @@ const updateProduct = async (event) => {
         const updateResult = await ddbClient.send(new UpdateItemCommand(params));
         console.log(updateResult);
         return updateResult;
+    } catch (error) {
+        console.error(error)
+        throw error
+    }
+}
+
+const getProductByCategory = async (event) => {
+    console.log('getProductByCategory', event)
+
+    try {
+        const productId = event.pathParameters.id
+        const category = event.queryStringsParameters.category
+
+        const param = {
+            TableName: process.env.DYNAMODB_TABLE_NAME,
+            KeyConditionExpression: "id = :productId",
+            FilterExpression: "contains (category, :category)",
+            ExpressionAttributeValues: {
+                ":productId": {S: productId},
+                ":category": {S: category}
+            }
+        }
+
+        const { items } = await ddbClient.send(new QueryCommand(param))
+        console.log(items)
+
+        return items.map((item) => unmarshall(item))
     } catch (error) {
         console.error(error)
         throw error
