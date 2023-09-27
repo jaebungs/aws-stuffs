@@ -1,6 +1,6 @@
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { dynamoDBclient } from './ddbClient'
-import { DeleteItemCommand, GetItemCommand, PutItemCommand, ScanCommand } from '@aws-sdk/client-dynamodb'
+import { DeleteItemCommand, GetItemCommand, PutItemCommand, ScanCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb'
 import {v4 as uuidv4 } from 'uuid'
 
 export const hanlder = async function(event) {
@@ -19,6 +19,9 @@ export const hanlder = async function(event) {
             break;
         case 'DELETE':
             body = await deleteProduct(event.pathParameters.id)
+            break;
+        case 'PUT':
+            body = await updateProduct(event)
             break;
         default:
             throw new Error('Unspported route: ' + event.httpMethod)
@@ -100,6 +103,35 @@ const deleteProduct = async (productId) => {
         const deleteResult = await dynamoDBclient.send(new DeleteItemCommand(param))
         console.log(deleteResult)
         return deleteProduct
+    } catch (error) {
+        console.error(error)
+        throw error
+    }
+}
+
+const updateProduct = async (event) => {
+    try {
+        const requestBody = JSON.parse(event.body)
+        const objKeys = Object.keys(requestBody)
+        console.log('update Product', requestBody)
+
+        const params = {
+            TableName: process.env.DYNAMODB_TABLE_NAME,
+            Key: marshall({ id: event.pathParameters.id }),
+            UpdateExpression: `SET ${objKeys.map((_, index) => `#key${index} = :value${index}`).join(", ")}`,
+            ExpressionAttributeNames: objKeys.reduce((acc, key, index) => ({
+                ...acc,
+                [`#key${index}`]: key,
+            }), {}),
+            ExpressionAttributeValues: marshall(objKeys.reduce((acc, key, index) => ({
+                ...acc,
+                [`:value${index}`]: requestBody[key],
+            }), {})),
+        }
+
+        const updateResult = await ddbClient.send(new UpdateItemCommand(params));
+        console.log(updateResult);
+        return updateResult;
     } catch (error) {
         console.error(error)
         throw error
