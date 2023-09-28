@@ -1,5 +1,5 @@
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import { dynamoDBclient } from './ddbClient'
+import { dynamoDBclient } from './ddbClient.js'
 import { DeleteItemCommand, GetItemCommand, PutItemCommand, ScanCommand, UpdateItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
 import {v4 as uuidv4 } from 'uuid'
 
@@ -102,7 +102,7 @@ const createProduct = async (event) => {
         }
         const createResult = await dynamoDBclient.send(new PutItemCommand(param))
         console.log(createResult)
-        return createProduct
+        return createResult
     } catch (error) {
         console.error(error)
         throw error
@@ -114,12 +114,12 @@ const deleteProduct = async (productId) => {
         console.log('deleteProduct', productId)
         const param = {
             TableName: process.env.DYNAMODB_TABLE_NAME,
-            key : marshall({ id: productId })
+            Key: marshall({ id: productId })
         }
 
         const deleteResult = await dynamoDBclient.send(new DeleteItemCommand(param))
         console.log(deleteResult)
-        return deleteProduct
+        return deleteResult
     } catch (error) {
         console.error(error)
         throw error
@@ -146,7 +146,7 @@ const updateProduct = async (event) => {
             }), {})),
         }
 
-        const updateResult = await ddbClient.send(new UpdateItemCommand(params));
+        const updateResult = await dynamoDBclient.send(new UpdateItemCommand(params));
         console.log(updateResult);
         return updateResult;
     } catch (error) {
@@ -160,7 +160,7 @@ const getProductByCategory = async (event) => {
 
     try {
         const productId = event.pathParameters.id
-        const category = event.queryStringsParameters.category
+        const category = event.queryStringParameters.category
 
         const param = {
             TableName: process.env.DYNAMODB_TABLE_NAME,
@@ -172,7 +172,7 @@ const getProductByCategory = async (event) => {
             }
         }
 
-        const { items } = await ddbClient.send(new QueryCommand(param))
+        const { items } = await dynamoDBclient.send(new QueryCommand(param))
         console.log(items)
 
         return items.map((item) => unmarshall(item))
