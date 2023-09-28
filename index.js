@@ -5,36 +5,50 @@ import {v4 as uuidv4 } from 'uuid'
 
 export const hanlder = async function(event) {
     console.log('handler request: ', JSON.stringify(event,undefined, 2))
+    let body
 
-    switch(event.httpMethod) {
-        case "GET":
-            if (event.queryStringsParameters != null) {
-                body = await getProductByCategory(event)
-            }
-            else if (event.pathParameters != null) {
-                body = await getProduct(event.pathParameters.id)
-            } else {
-                body = await getAllProduct()
-            }
-            break;
-        case 'POST':
-            body = await createProduct(event)
-            break;
-        case 'DELETE':
-            body = await deleteProduct(event.pathParameters.id)
-            break;
-        case 'PUT':
-            body = await updateProduct(event)
-            break;
-        default:
-            throw new Error('Unspported route: ' + event.httpMethod)
+    try {
+        switch(event.httpMethod) {
+            case "GET":
+                if (event.queryStringsParameters != null) {
+                    body = await getProductByCategory(event)
+                }
+                else if (event.pathParameters != null) {
+                    body = await getProduct(event.pathParameters.id)
+                } else {
+                    body = await getAllProduct()
+                }
+                break;
+            case 'POST':
+                body = await createProduct(event)
+                break;
+            case 'DELETE':
+                body = await deleteProduct(event.pathParameters.id)
+                break;
+            case 'PUT':
+                body = await updateProduct(event)
+                break;
+            default:
+                throw new Error('Unspported route: ' + event.httpMethod)
+    
+        }
 
-    }
-
-    return {
-        statusCode: 200,
-        headers: {'Content-Typ': 'text/plain'},
-        body: `Hi from aws lamda. You've hit ${event.path}.`
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                message: `Successfully operated: ${event.httpMethod}`,
+                body: body
+            })
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            body: JSON.stringify({
+                message: `Failed operation: ${event.httpMethod}`,
+                errorMessage: error.message,
+                errorStack: error.stack
+            })
+        }
     }
 }
 // ES6 NodeJS 16.X
