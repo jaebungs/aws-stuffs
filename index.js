@@ -1,9 +1,9 @@
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import { dynamoDBclient } from './ddbClient.js'
+import { dynamoDBclient } from './ddbClient.js';
 import { DeleteItemCommand, GetItemCommand, PutItemCommand, ScanCommand, UpdateItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
 import {v4 as uuidv4 } from 'uuid'
 
-export const hanlder = async function(event) {
+export const handler = async (event) => {
     console.log('handler request: ', JSON.stringify(event,undefined, 2))
     let body
 
